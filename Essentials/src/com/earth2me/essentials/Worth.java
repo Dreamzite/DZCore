@@ -1,177 +1,156 @@
 package com.earth2me.essentials;
 
-import static com.earth2me.essentials.I18n._;
 import com.earth2me.essentials.commands.NotEnoughArgumentsException;
-import java.io.File;
-import java.math.BigDecimal;
-import java.util.Locale;
-import java.util.logging.Logger;
+import com.earth2me.essentials.utils.VersionUtil;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.File;
+import java.math.BigDecimal;
+import java.util.Locale;
 
-public class Worth implements IConf
-{
-	private static final Logger logger = Logger.getLogger("Essentials");
-	private final EssentialsConf config;
+import static com.earth2me.essentials.I18n.tl;
 
-	public Worth(File dataFolder)
-	{
-		config = new EssentialsConf(new File(dataFolder, "worth.yml"));
-		config.setTemplateName("/worth.yml");
-		config.load();
-	}
 
-	public BigDecimal getPrice(ItemStack itemStack)
-	{
-		String itemname = itemStack.getType().toString().toLowerCase(Locale.ENGLISH).replace("_", "");
-		BigDecimal result;
+public class Worth implements IConf {
+    private final EssentialsConf config;
 
-		//First check for matches with item name
-		result = config.getBigDecimal("worth." + itemname + "." + itemStack.getDurability(), BigDecimal.ONE.negate());
-		if (result.signum() < 0)
-		{
-			final ConfigurationSection itemNameMatch = config.getConfigurationSection("worth." + itemname);
-			if (itemNameMatch != null && itemNameMatch.getKeys(false).size() == 1)
-			{
-				result = config.getBigDecimal("worth." + itemname + ".0", BigDecimal.ONE.negate());
-			}
-		}
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth." + itemname + ".*", BigDecimal.ONE.negate());
-		}
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth." + itemname, BigDecimal.ONE.negate());
-		}
+    public Worth(File dataFolder) {
+        config = new EssentialsConf(new File(dataFolder, "worth.yml"));
+        config.setTemplateName("/worth.yml");
+        config.load();
+    }
 
-		//Now we should check for item ID
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth." + itemStack.getTypeId() + "." + itemStack.getDurability(), BigDecimal.ONE.negate());
-		}
-		if (result.signum() < 0)
-		{
-			final ConfigurationSection itemNumberMatch = config.getConfigurationSection("worth." + itemStack.getTypeId());
-			if (itemNumberMatch != null && itemNumberMatch.getKeys(false).size() == 1)
-			{
-				result = config.getBigDecimal("worth." + itemStack.getTypeId() + ".0", BigDecimal.ONE.negate());
-			}
-		}
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth." + itemStack.getTypeId() + ".*", BigDecimal.ONE.negate());
-		}
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth." + itemStack.getTypeId(), BigDecimal.ONE.negate());
-		}
+    /**
+     * Get the value of an item stack from the config.
+     *
+     * @param ess       The Essentials instance.
+     * @param itemStack The item stack to look up in the config.
+     * @return The price from the config.
+     */
+    public BigDecimal getPrice(IEssentials ess, ItemStack itemStack) {
+        BigDecimal result;
 
-		//This is to match the old worth syntax
-		if (result.signum() < 0)
-		{
-			result = config.getBigDecimal("worth-" + itemStack.getTypeId(), BigDecimal.ONE.negate());
-		}
-		if (result.signum() < 0)
-		{
-			return null;
-		}
-		return result;
-	}
+        String itemname = itemStack.getType().toString().toLowerCase(Locale.ENGLISH).replace("_", "");
 
-	public int getAmount(IEssentials ess, User user, ItemStack is, String[] args, boolean isBulkSell) throws Exception
-	{
-		if (is == null || is.getType() == Material.AIR)
-		{
-			throw new Exception(_("itemSellAir"));
-		}
-		int id = is.getTypeId();
-		int amount = 0;
+        // Check for matches with data value from stack
+        // Note that we always default to BigDecimal.ONE.negate(), equivalent to -1
+        result = config.getBigDecimal("worth." + itemname + "." + itemStack.getDurability(), BigDecimal.ONE.negate());
 
-		if (args.length > 1)
-		{
-			try
-			{
-				amount = Integer.parseInt(args[1].replaceAll("[^0-9]", ""));
-			}
-			catch (NumberFormatException ex)
-			{
-				throw new NotEnoughArgumentsException(ex);
-			}
-			if (args[1].startsWith("-"))
-			{
-				amount = -amount;
-			}
-		}
+        // Check for matches with data value 0
+        if (result.signum() < 0) {
+            final ConfigurationSection itemNameMatch = config.getConfigurationSection("worth." + itemname);
+            if (itemNameMatch != null && itemNameMatch.getKeys(false).size() == 1) {
+                result = config.getBigDecimal("worth." + itemname + ".0", BigDecimal.ONE.negate());
+            }
+        }
 
-		boolean stack = args.length > 1 && args[1].endsWith("s");
-		boolean requireStack = ess.getSettings().isTradeInStacks(id);
+        // Check for matches with data value wildcard
+        if (result.signum() < 0) {
+            result = config.getBigDecimal("worth." + itemname + ".*", BigDecimal.ONE.negate());
+        }
 
-		if (requireStack && !stack)
-		{
-			throw new Exception(_("itemMustBeStacked"));
-		}
+        // Check for matches with item name alone
+        if (result.signum() < 0) {
+            result = config.getBigDecimal("worth." + itemname, BigDecimal.ONE.negate());
+        }
 
-		int max = 0;
-		for (ItemStack s : user.getInventory().getContents())
-		{
-			if (s == null || !s.isSimilar(is))
-			{
-				continue;
-			}
-			max += s.getAmount();
-		}
+        if (result.signum() < 0) {
+            return null;
+        }
+        return result;
+    }
 
-		if (stack)
-		{
-			amount *= is.getType().getMaxStackSize();
-		}
-		if (amount < 1)
-		{
-			amount += max;
-		}
+    /**
+     * Get the amount of items to be sold from a player's inventory.
+     *
+     * @param ess        The Essentials instance.
+     * @param user       The user attempting to sell the item.
+     * @param is         A stack of the item to search the inventory for.
+     * @param args       The amount to try to sell.
+     * @param isBulkSell Whether or not to try and bulk sell all items.
+     * @return The amount of items to sell from the player's inventory.
+     * @throws Exception Thrown if trying to sell air or an invalid amount.
+     */
+    public int getAmount(IEssentials ess, User user, ItemStack is, String[] args, boolean isBulkSell) throws Exception {
+        if (is == null || is.getType() == Material.AIR) {
+            throw new Exception(tl("itemSellAir"));
+        }
 
-		if (requireStack)
-		{
-			amount -= amount % is.getType().getMaxStackSize();
-		}
-		if (amount > max || amount < 1)
-		{
-			if (!isBulkSell)
-			{
-				user.sendMessage(_("itemNotEnough2"));
-				user.sendMessage(_("itemNotEnough3"));
-				throw new Exception(_("itemNotEnough1"));
-			}
-			else
-			{
-				return amount;
-			}
-		}
+        int amount = 0;
 
-		return amount;
-	}
+        if (args.length > 1) {
+            try {
+                amount = Integer.parseInt(args[1].replaceAll("[^0-9]", ""));
+            } catch (NumberFormatException ex) {
+                throw new NotEnoughArgumentsException(ex);
+            }
+            if (args[1].startsWith("-")) {
+                amount = -amount;
+            }
+        }
 
-	public void setPrice(ItemStack itemStack, double price)
-	{
-		if (itemStack.getType().getData() == null)
-		{
-			config.setProperty("worth." + itemStack.getType().toString().toLowerCase(Locale.ENGLISH).replace("_", ""), price);
-		}
-		else
-		{
-			// Bukkit-bug: getDurability still contains the correct value, while getData().getData() is 0.
-			config.setProperty("worth." + itemStack.getType().toString().toLowerCase(Locale.ENGLISH).replace("_", "") + "." + itemStack.getDurability(), price);
-		}
-		config.removeProperty("worth-" + itemStack.getTypeId());
-		config.save();
-	}
+        boolean stack = args.length > 1 && args[1].endsWith("s");
+        boolean requireStack = ess.getSettings().isTradeInStacks(is.getType());
 
-	@Override
-	public void reloadConfig()
-	{
-		config.load();
-	}
+        if (requireStack && !stack) {
+            throw new Exception(tl("itemMustBeStacked"));
+        }
+
+        int max = 0;
+        for (ItemStack s : user.getBase().getInventory().getContents()) {
+            if (s == null || !s.isSimilar(is)) {
+                continue;
+            }
+            max += s.getAmount();
+        }
+
+        if (stack) {
+            amount *= is.getType().getMaxStackSize();
+        }
+        if (amount < 1) {
+            amount += max;
+        }
+
+        if (requireStack) {
+            amount -= amount % is.getType().getMaxStackSize();
+        }
+        if (amount > max || amount < 1) {
+            if (!isBulkSell) {
+                user.sendMessage(tl("itemNotEnough2"));
+                user.sendMessage(tl("itemNotEnough3"));
+                throw new Exception(tl("itemNotEnough1"));
+            } else {
+                return amount;
+            }
+        }
+
+        return amount;
+    }
+
+    /**
+     * Set the price of an item and save it to the config.
+     *
+     * @param ess       The Essentials instance.
+     * @param itemStack A stack of the item to save.
+     * @param price     The new price of the item.
+     */
+    public void setPrice(IEssentials ess, ItemStack itemStack, double price) {
+        String path = "worth." + itemStack.getType().toString().toLowerCase(Locale.ENGLISH).replace("_", "");
+
+        // Spigot 1.13+ throws an exception if a 1.13+ plugin even *attempts* to do set data.
+        if (VersionUtil.getServerBukkitVersion().isLowerThan(VersionUtil.v1_13_0_R01) && itemStack.getType().getData() == null) {
+            // Bukkit-bug: getDurability still contains the correct value, while getData().getData() is 0.
+            path = path + "." + itemStack.getDurability();
+        }
+
+        config.setProperty(path, price);
+        config.save();
+    }
+
+    @Override
+    public void reloadConfig() {
+        config.load();
+    }
 }

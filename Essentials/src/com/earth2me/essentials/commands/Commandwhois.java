@@ -1,65 +1,84 @@
 package com.earth2me.essentials.commands;
 
 import com.earth2me.essentials.CommandSource;
-import static com.earth2me.essentials.I18n._;
 import com.earth2me.essentials.User;
 import com.earth2me.essentials.craftbukkit.SetExpFix;
 import com.earth2me.essentials.utils.DateUtil;
+import com.earth2me.essentials.utils.EnumUtil;
 import com.earth2me.essentials.utils.NumberUtil;
-import java.util.Locale;
 import org.bukkit.Server;
+import org.bukkit.Statistic;
+
+import java.util.Locale;
+import java.util.Collections;
+import java.util.List;
+
+import static com.earth2me.essentials.I18n.tl;
 
 
-public class Commandwhois extends EssentialsCommand
-{
-	public Commandwhois()
-	{
-		super("whois");
-	}
+public class Commandwhois extends EssentialsCommand {
+    // For some reason, in 1.13 PLAY_ONE_MINUTE = ticks played = what used to be PLAY_ONE_TICK
+    // https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/commits/b848d8ce633871b52115247b089029749c02f579
+    private static final Statistic PLAY_ONE_TICK = EnumUtil.getStatistic("PLAY_ONE_MINUTE", "PLAY_ONE_TICK");
 
-	@Override
-	public void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception
-	{
-		if (args.length < 1)
-		{
-			throw new NotEnoughArgumentsException();
-		}
+    public Commandwhois() {
+        super("whois");
+    }
 
-		User user = getPlayer(server, sender, args, 0);
+    @Override
+    public void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception {
+        if (args.length < 1) {
+            throw new NotEnoughArgumentsException();
+        }
 
-		sender.sendMessage(_("whoisTop", user.getName()));
-		user.setDisplayNick();
-		sender.sendMessage(_("whoisNick", user.getDisplayName()));
-		sender.sendMessage(_("whoisHealth", user.getHealth()));
-		sender.sendMessage(_("whoisHunger", user.getFoodLevel(), user.getSaturation()));
-		sender.sendMessage(_("whoisExp", SetExpFix.getTotalExperience(user.getBase()), user.getLevel()));
-		sender.sendMessage(_("whoisLocation", user.getLocation().getWorld().getName(), user.getLocation().getBlockX(), user.getLocation().getBlockY(), user.getLocation().getBlockZ()));
-		if (!ess.getSettings().isEcoDisabled())
-		{
-			sender.sendMessage(_("whoisMoney", NumberUtil.displayCurrency(user.getMoney(), ess)));
-		}
-		sender.sendMessage(_("whoisIPAddress", user.getAddress().getAddress().toString()));
-		final String location = user.getGeoLocation();
-		if (location != null
-			&& (sender.isPlayer() ? ess.getUser(sender.getPlayer()).isAuthorized("essentials.geoip.show") : true))
-		{
-			sender.sendMessage(_("whoisGeoLocation", location));
-		}
-		sender.sendMessage(_("whoisGamemode", _(user.getGameMode().toString().toLowerCase(Locale.ENGLISH))));
-		sender.sendMessage(_("whoisGod", (user.isGodModeEnabled() ? _("true") : _("false"))));
-		sender.sendMessage(_("whoisOp", (user.isOp() ? _("true") : _("false"))));
-		sender.sendMessage(_("whoisFly", user.getAllowFlight() ? _("true") : _("false"), user.isFlying() ? _("flying") : _("notFlying")));
-		sender.sendMessage(_("whoisAFK", (user.isAfk() ? _("true") : _("false"))));
-		sender.sendMessage(_("whoisJail", (user.isJailed()
-										   ? user.getJailTimeout() > 0
-											 ? DateUtil.formatDateDiff(user.getJailTimeout())
-											 : _("true")
-										   : _("false"))));
-		sender.sendMessage(_("whoisMuted", (user.isMuted()
-											? user.getMuteTimeout() > 0
-											  ? DateUtil.formatDateDiff(user.getMuteTimeout())
-											  : _("true")
-											: _("false"))));
+        User user = getPlayer(server, sender, args, 0);
 
-	}
+        sender.sendMessage(tl("whoisTop", user.getName()));
+        user.setDisplayNick();
+        sender.sendMessage(tl("whoisNick", user.getDisplayName()));
+        sender.sendMessage(tl("whoisUuid", user.getBase().getUniqueId().toString()));
+        sender.sendMessage(tl("whoisHealth", user.getBase().getHealth()));
+        sender.sendMessage(tl("whoisHunger", user.getBase().getFoodLevel(), user.getBase().getSaturation()));
+        sender.sendMessage(tl("whoisExp", SetExpFix.getTotalExperience(user.getBase()), user.getBase().getLevel()));
+        sender.sendMessage(tl("whoisLocation", user.getLocation().getWorld().getName(), user.getLocation().getBlockX(), user.getLocation().getBlockY(), user.getLocation().getBlockZ()));
+        long playtimeMs = System.currentTimeMillis() - (user.getBase().getStatistic(PLAY_ONE_TICK) * 50);
+        sender.sendMessage(tl("whoisPlaytime", DateUtil.formatDateDiff(playtimeMs)));
+        if (!ess.getSettings().isEcoDisabled()) {
+            sender.sendMessage(tl("whoisMoney", NumberUtil.displayCurrency(user.getMoney(), ess)));
+        }
+        if (!sender.isPlayer() || ess.getUser(sender.getPlayer()).isAuthorized("essentials.whois.ip")) {
+            sender.sendMessage(tl("whoisIPAddress", user.getBase().getAddress().getAddress().toString()));
+        }
+        final String location = user.getGeoLocation();
+        if (location != null && (!sender.isPlayer() || ess.getUser(sender.getPlayer()).isAuthorized("essentials.geoip.show"))) {
+            sender.sendMessage(tl("whoisGeoLocation", location));
+        }
+        sender.sendMessage(tl("whoisGamemode", tl(user.getBase().getGameMode().toString().toLowerCase(Locale.ENGLISH))));
+        sender.sendMessage(tl("whoisGod", (user.isGodModeEnabled() ? tl("true") : tl("false"))));
+        sender.sendMessage(tl("whoisOp", (user.getBase().isOp() ? tl("true") : tl("false"))));
+        sender.sendMessage(tl("whoisFly", user.getBase().getAllowFlight() ? tl("true") : tl("false"), user.getBase().isFlying() ? tl("flying") : tl("notFlying")));
+        if (user.isAfk()) {
+            sender.sendMessage(tl("whoisAFKSince", tl("true"), DateUtil.formatDateDiff(user.getAfkSince())));
+        } else {
+            sender.sendMessage(tl("whoisAFK", tl("false")));
+        }
+        sender.sendMessage(tl("whoisJail", (user.isJailed() ? user.getJailTimeout() > 0 ? DateUtil.formatDateDiff(user.getJailTimeout()) : tl("true") : tl("false"))));
+
+        long muteTimeout = user.getMuteTimeout();
+        if (!user.hasMuteReason()) {
+            sender.sendMessage(tl("whoisMuted", (user.isMuted() ? (muteTimeout > 0 ? DateUtil.formatDateDiff(muteTimeout) : tl("true")) : tl("false"))));
+        } else {
+            sender.sendMessage(tl("whoisMutedReason", (user.isMuted() ? (muteTimeout > 0 ? DateUtil.formatDateDiff(muteTimeout) : tl("true")) : tl("false")),
+                user.getMuteReason()));
+        }
+    }
+
+    @Override
+    protected List<String> getTabCompleteOptions(Server server, CommandSource sender, String commandLabel, String[] args) {
+        if (args.length == 1) {
+            return getPlayers(server, sender);
+        } else {
+            return Collections.emptyList();
+        }
+    }
 }

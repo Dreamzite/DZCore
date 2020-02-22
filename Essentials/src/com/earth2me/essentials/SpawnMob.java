@@ -1,14 +1,10 @@
 package com.earth2me.essentials;
 
-import static com.earth2me.essentials.I18n._;
 import com.earth2me.essentials.Mob.MobException;
+import com.earth2me.essentials.craftbukkit.InventoryWorkaround;
+import com.earth2me.essentials.utils.EnumUtil;
 import com.earth2me.essentials.utils.LocationUtil;
 import com.earth2me.essentials.utils.StringUtil;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import net.ess3.api.IEssentials;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,291 +14,263 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.*;
 
-public class SpawnMob
-{
-	public static String mobList(final User user)
-	{
-		final Set<String> mobList = Mob.getMobList();
-		final Set<String> availableList = new HashSet<String>();
-		for (String mob : mobList)
-		{
-			if (user.isAuthorized("essentials.spawnmob." + mob.toLowerCase(Locale.ENGLISH)))
-			{
-				availableList.add(mob);
-			}
-		}
-		if (availableList.isEmpty())
-		{
-			availableList.add(_("none"));
-		}
-		return StringUtil.joinList(availableList);
-	}
+import static com.earth2me.essentials.I18n.tl;
 
-	public static List<String> mobParts(final String mobString)
-	{
-		String[] mobParts = mobString.split(",");
 
-		List<String> mobs = new ArrayList<String>();
+public class SpawnMob {
 
-		for (String mobPart : mobParts)
-		{
-			String[] mobDatas = mobPart.split(":");
-			mobs.add(mobDatas[0]);
-		}
-		return mobs;
-	}
+    private static final Material GOLDEN_HELMET = EnumUtil.getMaterial("GOLDEN_HELMET", "GOLD_HELMET");
+    private static final Material GOLDEN_CHESTPLATE = EnumUtil.getMaterial("GOLDEN_CHESTPLATE", "GOLD_CHESTPLATE");
+    private static final Material GOLDEN_LEGGINGS = EnumUtil.getMaterial("GOLDEN_LEGGINGS", "GOLD_LEGGINGS");
+    private static final Material GOLDEN_BOOTS = EnumUtil.getMaterial("GOLDEN_BOOTS", "GOLD_BOOTS");
+    private static final Material GOLDEN_SWORD = EnumUtil.getMaterial("GOLDEN_SWORD", "GOLD_SWORD");
 
-	public static List<String> mobData(final String mobString)
-	{
-		String[] mobParts = mobString.split(",");
+    public static String mobList(final User user) {
+        final Set<String> mobList = Mob.getMobList();
+        final Set<String> availableList = new HashSet<String>();
+        for (String mob : mobList) {
+            if (user.isAuthorized("essentials.spawnmob." + mob.toLowerCase(Locale.ENGLISH))) {
+                availableList.add(mob);
+            }
+        }
+        if (availableList.isEmpty()) {
+            availableList.add(tl("none"));
+        }
+        return StringUtil.joinList(availableList);
+    }
 
-		List<String> mobData = new ArrayList<String>();
+    public static List<String> mobParts(final String mobString) {
+        String[] mobParts = mobString.split(",");
 
-		for (String mobPart : mobParts)
-		{
-			String[] mobDatas = mobPart.split(":");
-			if (mobDatas.length == 1)
-			{
-				if (mobPart.contains(":"))
-				{
-					mobData.add("");
-				}
-				else
-				{
-					mobData.add(null);
-				}
-			}
-			else
-			{
-				mobData.add(mobDatas[1]);
-			}
-		}
+        List<String> mobs = new ArrayList<String>();
 
-		return mobData;
-	}
+        for (String mobPart : mobParts) {
+            String[] mobDatas = mobPart.split(":");
+            mobs.add(mobDatas[0]);
+        }
+        return mobs;
+    }
 
-	// This method spawns a mob where the user is looking, owned by user
-	public static void spawnmob(final IEssentials ess, final Server server, final User user, final List<String> parts, final List<String> data, int mobCount) throws Exception
-	{
-		final Block block = LocationUtil.getTarget(user.getBase()).getBlock();
-		if (block == null)
-		{
-			throw new Exception(_("unableToSpawnMob"));
-		}
-		spawnmob(ess, server, user.getSource(), user, block.getLocation(), parts, data, mobCount);
-	}
+    public static List<String> mobData(final String mobString) {
+        String[] mobParts = mobString.split(",");
 
-	// This method spawns a mob at target, owned by target
-	public static void spawnmob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final List<String> parts, final List<String> data, int mobCount) throws Exception
-	{
-		spawnmob(ess, server, sender, target, target.getLocation(), parts, data, mobCount);
-	}
+        List<String> mobData = new ArrayList<String>();
 
-	// This method spawns a mob at loc, owned by target
-	public static void spawnmob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final Location loc, final List<String> parts, final List<String> data, int mobCount) throws Exception
-	{
-		final Location sloc = LocationUtil.getSafeDestination(loc);
+        for (String mobPart : mobParts) {
+            String[] mobDatas = mobPart.split(":");
+            if (mobDatas.length == 1) {
+                if (mobPart.contains(":")) {
+                    mobData.add("");
+                } else {
+                    mobData.add(null);
+                }
+            } else {
+                mobData.add(mobDatas[1]);
+            }
+        }
 
-		for (int i = 0; i < parts.size(); i++)
-		{
-			Mob mob = Mob.fromName(parts.get(i));
-			checkSpawnable(ess, sender, mob);
-		}
+        return mobData;
+    }
 
-		final int serverLimit = ess.getSettings().getSpawnMobLimit();
-		int effectiveLimit = serverLimit / parts.size();
+    // This method spawns a mob where the user is looking, owned by user
+    public static void spawnmob(final IEssentials ess, final Server server, final User user, final List<String> parts, final List<String> data, int mobCount) throws Exception {
+        final Block block = LocationUtil.getTarget(user.getBase()).getBlock();
+        if (block == null) {
+            throw new Exception(tl("unableToSpawnMob"));
+        }
+        spawnmob(ess, server, user.getSource(), user, block.getLocation(), parts, data, mobCount);
+    }
 
-		if (effectiveLimit < 1)
-		{
-			effectiveLimit = 1;
-			while (parts.size() > serverLimit)
-			{
-				parts.remove(serverLimit);
-			}
-		}
+    // This method spawns a mob at target, owned by target
+    public static void spawnmob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final List<String> parts, final List<String> data, int mobCount) throws Exception {
+        spawnmob(ess, server, sender, target, target.getLocation(), parts, data, mobCount);
+    }
 
-		if (mobCount > effectiveLimit)
-		{
-			mobCount = effectiveLimit;
-			sender.sendMessage(_("mobSpawnLimit"));
-		}
+    // This method spawns a mob at loc, owned by target
+    public static void spawnmob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final Location loc, final List<String> parts, final List<String> data, int mobCount) throws Exception {
+        final Location sloc = LocationUtil.getSafeDestination(loc);
 
-		Mob mob = Mob.fromName(parts.get(0)); // Get the first mob
-		try
-		{
-			for (int i = 0; i < mobCount; i++)
-			{
-				spawnMob(ess, server, sender, target, sloc, parts, data);
-			}
-			sender.sendMessage(mobCount * parts.size() + " " + mob.name.toLowerCase(Locale.ENGLISH) + mob.suffix + " " + _("spawned"));
-		}
-		catch (MobException e1)
-		{
-			throw new Exception(_("unableToSpawnMob"), e1);
-		}
-		catch (NumberFormatException e2)
-		{
-			throw new Exception(_("numberRequired"), e2);
-		}
-		catch (NullPointerException np)
-		{
-			throw new Exception(_("soloMob"), np);
-		}
-	}
+        for (int i = 0; i < parts.size(); i++) {
+            Mob mob = Mob.fromName(parts.get(i));
+            checkSpawnable(ess, sender, mob);
+        }
 
-	private static void spawnMob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final Location sloc, List<String> parts, List<String> data) throws Exception
-	{
-		Mob mob;
-		Entity spawnedMob = null;
-		Entity spawnedMount;
+        final int serverLimit = ess.getSettings().getSpawnMobLimit();
+        int effectiveLimit = serverLimit / parts.size();
 
-		for (int i = 0; i < parts.size(); i++)
-		{
-			if (i == 0)
-			{
-				mob = Mob.fromName(parts.get(i));
-				spawnedMob = mob.spawn(sloc.getWorld(), server, sloc);
-				defaultMobData(mob.getType(), spawnedMob);
+        if (effectiveLimit < 1) {
+            effectiveLimit = 1;
+            while (parts.size() > serverLimit) {
+                parts.remove(serverLimit);
+            }
+        }
 
-				if (data.get(i) != null)
-				{
-					changeMobData(sender, mob.getType(), spawnedMob, data.get(i).toLowerCase(Locale.ENGLISH), target);
-				}
-			}
+        if (mobCount > effectiveLimit) {
+            mobCount = effectiveLimit;
+            sender.sendMessage(tl("mobSpawnLimit"));
+        }
 
-			int next = (i + 1);
-			if (next < parts.size()) //If it's the last mob in the list, don't set the mount
-			{
-				Mob mMob = Mob.fromName(parts.get(next));
-				spawnedMount = mMob.spawn(sloc.getWorld(), server, sloc);
-				defaultMobData(mMob.getType(), spawnedMount);
+        Mob mob = Mob.fromName(parts.get(0)); // Get the first mob
+        try {
+            for (int i = 0; i < mobCount; i++) {
+                spawnMob(ess, server, sender, target, sloc, parts, data);
+            }
+            sender.sendMessage(mobCount * parts.size() + " " + mob.name.toLowerCase(Locale.ENGLISH) + mob.suffix + " " + tl("spawned"));
+        } catch (MobException e1) {
+            throw new Exception(tl("unableToSpawnMob"), e1);
+        } catch (NumberFormatException e2) {
+            throw new Exception(tl("numberRequired"), e2);
+        } catch (NullPointerException np) {
+            throw new Exception(tl("soloMob"), np);
+        }
+    }
 
-				if (data.get(next) != null)
-				{
-					changeMobData(sender, mMob.getType(), spawnedMount, data.get(next).toLowerCase(Locale.ENGLISH), target);
-				}
+    private static void spawnMob(final IEssentials ess, final Server server, final CommandSource sender, final User target, final Location sloc, List<String> parts, List<String> data) throws Exception {
+        Mob mob;
+        Entity spawnedMob = null;
+        Entity spawnedMount;
 
-				spawnedMob.setPassenger(spawnedMount);
+        for (int i = 0; i < parts.size(); i++) {
+            if (i == 0) {
+                mob = Mob.fromName(parts.get(i));
+                spawnedMob = mob.spawn(sloc.getWorld(), server, sloc);
+                defaultMobData(mob.getType(), spawnedMob);
 
-				spawnedMob = spawnedMount;
-			}
-		}
-	}
+                if (data.get(i) != null) {
+                    changeMobData(sender, mob.getType(), spawnedMob, data.get(i).toLowerCase(Locale.ENGLISH), target);
+                }
+            }
 
-	private static void checkSpawnable(IEssentials ess, CommandSource sender, Mob mob) throws Exception
-	{
-		if (mob == null)
-		{
-			throw new Exception(_("invalidMob"));
-		}
+            int next = (i + 1);
+            if (next < parts.size()) //If it's the last mob in the list, don't set the mount
+            {
+                Mob mMob = Mob.fromName(parts.get(next));
+                spawnedMount = mMob.spawn(sloc.getWorld(), server, sloc);
+                defaultMobData(mMob.getType(), spawnedMount);
 
-		if (ess.getSettings().getProtectPreventSpawn(mob.getType().toString().toLowerCase(Locale.ENGLISH)))
-		{
-			throw new Exception(_("disabledToSpawnMob"));
-		}
+                if (data.get(next) != null) {
+                    changeMobData(sender, mMob.getType(), spawnedMount, data.get(next).toLowerCase(Locale.ENGLISH), target);
+                }
 
-		if (sender.isPlayer() && !ess.getUser(sender.getPlayer()).isAuthorized("essentials.spawnmob." + mob.name.toLowerCase(Locale.ENGLISH)))
-		{
-			throw new Exception(_("noPermToSpawnMob"));
-		}
-	}
+                spawnedMob.setPassenger(spawnedMount);
 
-	private static void changeMobData(final CommandSource sender, final EntityType type, final Entity spawned, final String inputData, final User target) throws Exception
-	{
-		String data = inputData;
+                spawnedMob = spawnedMount;
+            }
+        }
+    }
 
-		if (data.isEmpty())
-		{
-			sender.sendMessage(_("mobDataList", StringUtil.joinList(MobData.getValidHelp(spawned))));
-		}
+    private static void checkSpawnable(IEssentials ess, CommandSource sender, Mob mob) throws Exception {
+        if (mob == null || mob.getType() == null) {
+            throw new Exception(tl("invalidMob"));
+        }
 
-		if (spawned instanceof Zombie || type == EntityType.SKELETON)
-		{
-			if (inputData.contains("armor") || inputData.contains("armour"))
-			{
-				final EntityEquipment invent = ((LivingEntity)spawned).getEquipment();
-				if (inputData.contains("noarmor") || inputData.contains("noarmour"))
-				{
-					invent.clear();
-				}
-				else if (inputData.contains("diamond"))
-				{
-					invent.setBoots(new ItemStack(Material.DIAMOND_BOOTS, 1));
-					invent.setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS, 1));
-					invent.setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE, 1));
-					invent.setHelmet(new ItemStack(Material.DIAMOND_HELMET, 1));
-				}
-				else if (inputData.contains("gold"))
-				{
-					invent.setBoots(new ItemStack(Material.GOLD_BOOTS, 1));
-					invent.setLeggings(new ItemStack(Material.GOLD_LEGGINGS, 1));
-					invent.setChestplate(new ItemStack(Material.GOLD_CHESTPLATE, 1));
-					invent.setHelmet(new ItemStack(Material.GOLD_HELMET, 1));
-				}
-				else if (inputData.contains("leather"))
-				{
-					invent.setBoots(new ItemStack(Material.LEATHER_BOOTS, 1));
-					invent.setLeggings(new ItemStack(Material.LEATHER_LEGGINGS, 1));
-					invent.setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE, 1));
-					invent.setHelmet(new ItemStack(Material.LEATHER_HELMET, 1));
-				}
-				else
-				{
-					invent.setBoots(new ItemStack(Material.IRON_BOOTS, 1));
-					invent.setLeggings(new ItemStack(Material.IRON_LEGGINGS, 1));
-					invent.setChestplate(new ItemStack(Material.IRON_CHESTPLATE, 1));
-					invent.setHelmet(new ItemStack(Material.IRON_HELMET, 1));
-				}
-				invent.setBootsDropChance(0f);
-				invent.setLeggingsDropChance(0f);
-				invent.setChestplateDropChance(0f);
-				invent.setHelmetDropChance(0f);
-			}
+        if (ess.getSettings().getProtectPreventSpawn(mob.getType().toString().toLowerCase(Locale.ENGLISH))) {
+            throw new Exception(tl("disabledToSpawnMob"));
+        }
 
-		}
+        if (sender.isPlayer() && !ess.getUser(sender.getPlayer()).isAuthorized("essentials.spawnmob." + mob.name.toLowerCase(Locale.ENGLISH))) {
+            throw new Exception(tl("noPermToSpawnMob"));
+        }
+    }
 
-		MobData newData = MobData.fromData(spawned, data);
-		while (newData != null)
-		{
-			newData.setData(spawned, target.getBase(), data);
-			data = data.replace(newData.getMatched(), "");
-			newData = MobData.fromData(spawned, data);
-		}
-	}
+    private static void changeMobData(final CommandSource sender, final EntityType type, final Entity spawned, final String inputData, final User target) throws Exception {
+        String data = inputData;
 
-	private static void defaultMobData(final EntityType type, final Entity spawned)
-	{
-		if (type == EntityType.SKELETON)
-		{
-			final EntityEquipment invent = ((LivingEntity)spawned).getEquipment();
-			invent.setItemInHand(new ItemStack(Material.BOW, 1));
-			invent.setItemInHandDropChance(0.1f);
+        if (data.isEmpty()) {
+            sender.sendMessage(tl("mobDataList", StringUtil.joinList(MobData.getValidHelp(spawned))));
+        }
 
-			invent.setBoots(new ItemStack(Material.GOLD_BOOTS, 1));
-			invent.setBootsDropChance(0.0f);
-		}
+        if (spawned instanceof Zombie) {
+            ((Zombie) spawned).setBaby(false);
+        } else if (spawned instanceof Ageable) {
+            ((Ageable) spawned).setAdult();
+        }
 
-		if (type == EntityType.PIG_ZOMBIE)
-		{
-			final EntityEquipment invent = ((LivingEntity)spawned).getEquipment();
-			invent.setItemInHand(new ItemStack(Material.GOLD_SWORD, 1));
-			invent.setItemInHandDropChance(0.1f);
+        if (spawned instanceof Zombie || type == EntityType.SKELETON) {
+            if (inputData.contains("armor") || inputData.contains("armour")) {
+                final EntityEquipment invent = ((LivingEntity) spawned).getEquipment();
+                if (inputData.contains("noarmor") || inputData.contains("noarmour")) {
+                    invent.clear();
+                } else if (inputData.contains("diamond")) {
+                    invent.setBoots(new ItemStack(Material.DIAMOND_BOOTS, 1));
+                    invent.setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS, 1));
+                    invent.setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE, 1));
+                    invent.setHelmet(new ItemStack(Material.DIAMOND_HELMET, 1));
+                } else if (inputData.contains("gold")) {
+                    invent.setBoots(new ItemStack(GOLDEN_BOOTS, 1));
+                    invent.setLeggings(new ItemStack(GOLDEN_LEGGINGS, 1));
+                    invent.setChestplate(new ItemStack(GOLDEN_CHESTPLATE, 1));
+                    invent.setHelmet(new ItemStack(GOLDEN_HELMET, 1));
+                } else if (inputData.contains("leather")) {
+                    invent.setBoots(new ItemStack(Material.LEATHER_BOOTS, 1));
+                    invent.setLeggings(new ItemStack(Material.LEATHER_LEGGINGS, 1));
+                    invent.setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE, 1));
+                    invent.setHelmet(new ItemStack(Material.LEATHER_HELMET, 1));
+                } else if (inputData.contains("iron")) {
+                    invent.setBoots(new ItemStack(Material.IRON_BOOTS, 1));
+                    invent.setLeggings(new ItemStack(Material.IRON_LEGGINGS, 1));
+                    invent.setChestplate(new ItemStack(Material.IRON_CHESTPLATE, 1));
+                    invent.setHelmet(new ItemStack(Material.IRON_HELMET, 1));
+                }
+                invent.setBootsDropChance(0f);
+                invent.setLeggingsDropChance(0f);
+                invent.setChestplateDropChance(0f);
+                invent.setHelmetDropChance(0f);
+            }
 
-			invent.setBoots(new ItemStack(Material.GOLD_BOOTS, 1));
-			invent.setBootsDropChance(0.0f);
-		}
+        }
 
-		if (type == EntityType.ZOMBIE)
-		{
-			final EntityEquipment invent = ((LivingEntity)spawned).getEquipment();
-			invent.setBoots(new ItemStack(Material.GOLD_BOOTS, 1));
-			invent.setBootsDropChance(0.0f);
-		}
+        MobData newData = MobData.fromData(spawned, data);
+        while (newData != null) {
+            newData.setData(spawned, target.getBase(), data);
+            data = data.replace(newData.getMatched(), "");
+            newData = MobData.fromData(spawned, data);
+        }
+    }
 
-		if (type == EntityType.HORSE)
-		{
-			((Horse)spawned).setJumpStrength(1.2);
-		}
-	}
+    private static void defaultMobData(final EntityType type, final Entity spawned) {
+        if (type == EntityType.SKELETON) {
+            final EntityEquipment invent = ((LivingEntity) spawned).getEquipment();
+            InventoryWorkaround.setItemInMainHand(invent, new ItemStack(Material.BOW, 1));
+            InventoryWorkaround.setItemInMainHandDropChance(invent, 0.1f);
+
+            invent.setBoots(new ItemStack(GOLDEN_BOOTS, 1));
+            invent.setBootsDropChance(0.0f);
+        }
+
+        if (type == EntityType.PIG_ZOMBIE) {
+            final PigZombie zombie = ((PigZombie) spawned);
+            setVillager(zombie, false);
+
+            final EntityEquipment invent = zombie.getEquipment();
+            InventoryWorkaround.setItemInMainHand(invent, new ItemStack(GOLDEN_SWORD, 1));
+            InventoryWorkaround.setItemInMainHandDropChance(invent, 0.1f);
+
+            invent.setBoots(new ItemStack(GOLDEN_BOOTS, 1));
+            invent.setBootsDropChance(0.0f);
+        }
+
+        if (type == EntityType.ZOMBIE) {
+            final Zombie zombie = ((Zombie) spawned);
+            setVillager(zombie, false);
+
+            final EntityEquipment invent = zombie.getEquipment();
+            invent.setBoots(new ItemStack(GOLDEN_BOOTS, 1));
+            invent.setBootsDropChance(0.0f);
+        }
+
+        if (type == EntityType.HORSE) {
+            ((Horse) spawned).setJumpStrength(1.2);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void setVillager(Zombie zombie, boolean villager) {
+        try {
+            zombie.setVillager(villager);
+        } catch (Exception ignored) {
+        }
+    }
 }

@@ -1,74 +1,83 @@
 package com.earth2me.essentials.commands;
 
-import static com.earth2me.essentials.I18n._;
 import com.earth2me.essentials.User;
 import com.earth2me.essentials.craftbukkit.InventoryWorkaround;
-import com.earth2me.essentials.utils.LocationUtil;
-
-import org.bukkit.Location;
+import com.earth2me.essentials.utils.EnumUtil;
+import com.earth2me.essentials.utils.MaterialUtil;
+import com.google.common.collect.Lists;
 import org.bukkit.Material;
 import org.bukkit.Server;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Skull;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
-public class Commandskull extends EssentialsCommand
-{
-	public Commandskull()
-	{
-		super("skull");
-	}
-	
-	@Override
-	protected void run(final Server server, final User user, final String commandLabel, final String[] args) throws Exception
-	{
-		String owner;
+import java.util.Collections;
+import java.util.List;
 
-		if (args.length > 0 && user.isAuthorized("essentials.skull.others")) {
-			if (!args[0].matches("^[A-Za-z0-9_]+$")) {
-				throw new IllegalArgumentException(_("alphaNames"));
-			}
-			owner = args[0];
-		}
-		else {
-			owner = user.getName();
-		}
+import static com.earth2me.essentials.I18n.tl;
 
-		ItemStack itemSkull = user.getBase().getItemInHand();
-		SkullMeta metaSkull = null;
-		boolean spawn = false;
+public class Commandskull extends EssentialsCommand {
 
-		if (itemSkull != null && itemSkull.getType() == Material.SKULL_ITEM && itemSkull.getDurability() == 3) {
-			metaSkull = (SkullMeta) itemSkull.getItemMeta();
-		}
-		else if (user.isAuthorized("essentials.skull.spawn"))
-		{
-			itemSkull = new ItemStack(Material.SKULL_ITEM, 1, (byte) 3);
-			metaSkull = (SkullMeta) itemSkull.getItemMeta();
-			spawn = true;
-		}
-		else {
-			throw new Exception(_("invalidSkull"));
-		}
+    private static final Material SKULL_ITEM = EnumUtil.getMaterial("PLAYER_HEAD", "SKULL_ITEM");
 
-		if (metaSkull.hasOwner() && !user.isAuthorized("essentials.skull.modify"))
-		{
-			throw new Exception(_("noPermissionSkull"));
-		}
+    public Commandskull() {
+        super("skull");
+    }
 
-		metaSkull.setDisplayName("§fSkull of " + owner);
-		metaSkull.setOwner(owner);
+    @Override
+    protected void run(final Server server, final User user, final String commandLabel, final String[] args) throws Exception {
+        String owner;
 
-		itemSkull.setItemMeta(metaSkull);
+        if (args.length > 0 && user.isAuthorized("essentials.skull.others")) {
+            if (!args[0].matches("^[A-Za-z0-9_]+$")) {
+                throw new IllegalArgumentException(tl("alphaNames"));
+            }
+            owner = args[0];
+        } else {
+            owner = user.getName();
+        }
 
-		if (spawn) {
-			InventoryWorkaround.addItems(user.getBase().getInventory(), itemSkull);
-			user.sendMessage(_("givenSkull", owner));
-		}
-		else {
-			user.sendMessage(_("skullChanged", owner));
-		}
-	}
+        ItemStack itemSkull = user.getItemInHand();
+        SkullMeta metaSkull = null;
+        boolean spawn = false;
+
+        if (itemSkull != null && MaterialUtil.isPlayerHead(itemSkull.getType(), itemSkull.getDurability())) {
+            metaSkull = (SkullMeta) itemSkull.getItemMeta();
+        } else if (user.isAuthorized("essentials.skull.spawn")) {
+            itemSkull = new ItemStack(SKULL_ITEM, 1, (byte) 3);
+            metaSkull = (SkullMeta) itemSkull.getItemMeta();
+            spawn = true;
+        } else {
+            throw new Exception(tl("invalidSkull"));
+        }
+
+        if (metaSkull.hasOwner() && !user.isAuthorized("essentials.skull.modify")) {
+            throw new Exception(tl("noPermissionSkull"));
+        }
+
+        metaSkull.setDisplayName("§fSkull of " + owner);
+        metaSkull.setOwner(owner);
+
+        itemSkull.setItemMeta(metaSkull);
+
+        if (spawn) {
+            InventoryWorkaround.addItems(user.getBase().getInventory(), itemSkull);
+            user.sendMessage(tl("givenSkull", owner));
+        } else {
+            user.sendMessage(tl("skullChanged", owner));
+        }
+    }
+
+    @Override
+    protected List<String> getTabCompleteOptions(Server server, User user, String commandLabel, String[] args) {
+        if (args.length == 1) {
+            if (user.isAuthorized("essentials.skull.others")) {
+                return getPlayers(server, user);
+            } else {
+                return Lists.newArrayList(user.getName());
+            }
+        } else {
+            return Collections.emptyList();
+        }
+    }
 
 }

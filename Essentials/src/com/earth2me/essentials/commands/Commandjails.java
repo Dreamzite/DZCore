@@ -4,17 +4,22 @@ import com.earth2me.essentials.CommandSource;
 import com.earth2me.essentials.utils.StringUtil;
 import org.bukkit.Server;
 
+import java.util.Collection;
 
-public class Commandjails extends EssentialsCommand
-{
-	public Commandjails()
-	{
-		super("jails");
-	}
+import static com.earth2me.essentials.I18n.tl;
 
-	@Override
-	protected void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception
-	{
-		sender.sendMessage("§7" + StringUtil.joinList(" ", ess.getJails().getList()));
-	}
+
+public class Commandjails extends EssentialsCommand {
+    public Commandjails() {
+        super("jails");
+    }
+
+    @Override
+    protected void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception {
+        if (ess.getJails().getCount() < 1) {
+            sender.sendMessage(tl("noJailsDefined"));
+        } else {
+            sender.sendMessage(tl("jailList", StringUtil.joinList(" ", ess.getJails().getList())));
+        }
+    }
 }

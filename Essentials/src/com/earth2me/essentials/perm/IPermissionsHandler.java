@@ -1,22 +1,27 @@
 package com.earth2me.essentials.perm;
 
-import java.util.List;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 
-public interface IPermissionsHandler
-{
-	String getGroup(Player base);
 
-	List<String> getGroups(Player base);
+public interface IPermissionsHandler {
+    String getGroup(Player base);
 
-	boolean canBuild(Player base, String group);
+    List<String> getGroups(Player base);
 
-	boolean inGroup(Player base, String group);
+    boolean canBuild(Player base, String group);
 
-	boolean hasPermission(Player base, String node);
+    boolean inGroup(Player base, String group);
 
-	String getPrefix(Player base);
+    boolean hasPermission(Player base, String node);
 
-	String getSuffix(Player base);
+    // Does not check for * permissions
+    boolean isPermissionSet(Player base, String node);
+
+    String getPrefix(Player base);
+
+    String getSuffix(Player base);
+
+    boolean tryProvider();
 }

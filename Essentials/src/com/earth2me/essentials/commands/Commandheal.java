@@ -1,7 +1,6 @@
 package com.earth2me.essentials.commands;
 
 import com.earth2me.essentials.CommandSource;
-import static com.earth2me.essentials.I18n._;
 import com.earth2me.essentials.User;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
@@ -9,86 +8,93 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.potion.PotionEffect;
 
+import java.util.Collections;
+import java.util.List;
 
-public class Commandheal extends EssentialsLoopCommand
-{
-	public Commandheal()
-	{
-		super("heal");
-	}
+import static com.earth2me.essentials.I18n.tl;
 
-	@Override
-	public void run(final Server server, final User user, final String commandLabel, final String[] args) throws Exception
-	{
-		if (!user.isAuthorized("essentials.heal.cooldown.bypass"))
-		{
-			user.healCooldown();
-		}
 
-		if (args.length > 0 && user.isAuthorized("essentials.heal.others"))
-		{
-			loopOnlinePlayers(server, user.getSource(), true, true, args[0], null);
-			return;
-		}
+public class Commandheal extends EssentialsLoopCommand {
+    public Commandheal() {
+        super("heal");
+    }
 
-		healPlayer(user);
-	}
+    @Override
+    public void run(final Server server, final User user, final String commandLabel, final String[] args) throws Exception {
+        if (!user.isAuthorized("essentials.heal.cooldown.bypass")) {
+            user.healCooldown();
+        }
 
-	@Override
-	public void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception
-	{
-		if (args.length < 1)
-		{
-			throw new NotEnoughArgumentsException();
-		}
+        if (args.length > 0 && user.isAuthorized("essentials.heal.others")) {
+            loopOnlinePlayers(server, user.getSource(), true, true, args[0], null);
+            return;
+        }
 
-		loopOnlinePlayers(server, sender, true, true, args[0], null);
-	}
+        healPlayer(user);
+    }
 
-	@Override
-	protected void updatePlayer(final Server server, final CommandSource sender, final User player, final String[] args) throws PlayerExemptException
-	{
-		try
-		{
-			healPlayer(player);
-			sender.sendMessage(_("healOther", player.getDisplayName()));
-		}
-		catch (QuietAbortException e)
-		{
-			//Handle Quietly
-		}
-	}
+    @Override
+    public void run(final Server server, final CommandSource sender, final String commandLabel, final String[] args) throws Exception {
+        if (args.length < 1) {
+            throw new NotEnoughArgumentsException();
+        }
 
-	private void healPlayer(final User user) throws PlayerExemptException, QuietAbortException
-	{
-		final Player player = user.getBase();
+        loopOnlinePlayers(server, sender, true, true, args[0], null);
+    }
 
-		if (player.getHealth() == 0)
-		{
-			throw new PlayerExemptException(_("healDead"));
-		}
+    @Override
+    protected void updatePlayer(final Server server, final CommandSource sender, final User player, final String[] args) throws PlayerExemptException {
+        try {
+            healPlayer(player);
+            sender.sendMessage(tl("healOther", player.getDisplayName()));
+        } catch (QuietAbortException e) {
+            //Handle Quietly
+        }
+    }
 
-		final double amount = player.getMaxHealth() - player.getHealth();
-		final EntityRegainHealthEvent erhe = new EntityRegainHealthEvent(player, amount, RegainReason.CUSTOM);
-		ess.getServer().getPluginManager().callEvent(erhe);
-		if (erhe.isCancelled())
-		{
-			throw new QuietAbortException();
-		}
+    private void healPlayer(final User user) throws PlayerExemptException, QuietAbortException {
+        final Player player = user.getBase();
 
-		double newAmount = player.getHealth() + erhe.getAmount();
-		if (newAmount > player.getMaxHealth())
-		{
-			newAmount = player.getMaxHealth();
-		}
+        if (player.getHealth() == 0) {
+            throw new PlayerExemptException(tl("healDead"));
+        }
 
-		player.setHealth(newAmount);
-		player.setFoodLevel(20);
-		player.setFireTicks(0);
-		user.sendMessage(_("heal"));
-		for (PotionEffect effect : player.getActivePotionEffects())
-		{
-			player.removePotionEffect(effect.getType());
-		}
-	}
+        final double amount = player.getMaxHealth() - player.getHealth();
+        final EntityRegainHealthEvent erhe = new EntityRegainHealthEvent(player, amount, RegainReason.CUSTOM);
+        ess.getServer().getPluginManager().callEvent(erhe);
+        if (erhe.isCancelled()) {
+            throw new QuietAbortException();
+        }
+
+        double newAmount = player.getHealth() + erhe.getAmount();
+        if (newAmount > player.getMaxHealth()) {
+            newAmount = player.getMaxHealth();
+        }
+
+        player.setHealth(newAmount);
+        player.setFoodLevel(20);
+        player.setFireTicks(0);
+        user.sendMessage(tl("heal"));
+        for (PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+    }
+
+    @Override
+    protected List<String> getTabCompleteOptions(Server server, User user, String commandLabel, String[] args) {
+        if (args.length == 1 && user.isAuthorized("essentials.heal.others")) {
+            return getPlayers(server, user);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    protected List<String> getTabCompleteOptions(Server server, CommandSource sender, String commandLabel, String[] args) {
+        if (args.length == 1) {
+            return getPlayers(server, sender);
+        } else {
+            return Collections.emptyList();
+        }
+    }
 }

@@ -6,7 +6,7 @@ import com.earth2me.essentials.api.IWarps;
 import com.earth2me.essentials.metrics.Metrics;
 import com.earth2me.essentials.perm.PermissionsHandler;
 import com.earth2me.essentials.register.payment.Methods;
-import java.util.List;
+import net.ess3.nms.SpawnerProvider;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -15,75 +15,92 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
-public interface IEssentials extends Plugin
-{
-	void addReloadListener(IConf listener);
+public interface IEssentials extends Plugin {
+    void addReloadListener(IConf listener);
 
-	void reload();
+    void reload();
 
-	boolean onCommandEssentials(CommandSender sender, Command command, String commandLabel, String[] args, ClassLoader classLoader, String commandPath, String permissionPrefix, IEssentialsModule module);
+    List<String> onTabCompleteEssentials(CommandSender sender, Command command, String commandLabel, String[] args, ClassLoader classLoader, String commandPath, String permissionPrefix, IEssentialsModule module);
 
-	@Deprecated
-	User getUser(Object base);
-	
-	User getUser(String base);
-	
-	User getUser(Player base);
+    boolean onCommandEssentials(CommandSender sender, Command command, String commandLabel, String[] args, ClassLoader classLoader, String commandPath, String permissionPrefix, IEssentialsModule module);
 
-	I18n getI18n();
+    @Deprecated
+    User getUser(Object base);
 
-	User getOfflineUser(String name);
+    User getUser(UUID base);
 
-	World getWorld(String name);
+    User getUser(String base);
 
-	int broadcastMessage(String message);
+    User getUser(Player base);
 
-	int broadcastMessage(IUser sender, String message);
+    I18n getI18n();
 
-	int broadcastMessage(String permission, String message);
+    User getOfflineUser(String name);
 
-	ISettings getSettings();
+    World getWorld(String name);
 
-	BukkitScheduler getScheduler();
+    int broadcastMessage(String message);
 
-	IJails getJails();
+    int broadcastMessage(IUser sender, String message);
 
-	IWarps getWarps();
+    int broadcastMessage(String permission, String message);
 
-	Worth getWorth();
+    ISettings getSettings();
 
-	Backup getBackup();
+    BukkitScheduler getScheduler();
 
-	Methods getPaymentMethod();
+    IJails getJails();
 
-	BukkitTask runTaskAsynchronously(Runnable run);
+    IWarps getWarps();
 
-	BukkitTask runTaskLaterAsynchronously(Runnable run, long delay);
+    Worth getWorth();
 
-	int scheduleSyncDelayedTask(Runnable run);
+    Backup getBackup();
 
-	int scheduleSyncDelayedTask(Runnable run, long delay);
+    Kits getKits();
 
-	int scheduleSyncRepeatingTask(final Runnable run, long delay, long period);
+    Methods getPaymentMethod();
 
-	TNTExplodeListener getTNTListener();
+    BukkitTask runTaskAsynchronously(Runnable run);
 
-	PermissionsHandler getPermissionsHandler();
+    BukkitTask runTaskLaterAsynchronously(Runnable run, long delay);
 
-	AlternativeCommandsHandler getAlternativeCommandsHandler();
+    BukkitTask runTaskTimerAsynchronously(Runnable run, long delay, long period);
 
-	void showError(final CommandSource sender, final Throwable exception, final String commandLabel);
+    int scheduleSyncDelayedTask(Runnable run);
 
-	IItemDb getItemDb();
+    int scheduleSyncDelayedTask(Runnable run, long delay);
 
-	UserMap getUserMap();
+    int scheduleSyncRepeatingTask(Runnable run, long delay, long period);
 
-	Metrics getMetrics();
+    TNTExplodeListener getTNTListener();
 
-	void setMetrics(Metrics metrics);
+    PermissionsHandler getPermissionsHandler();
 
-	EssentialsTimer getTimer();
+    AlternativeCommandsHandler getAlternativeCommandsHandler();
 
-	List<String> getVanishedPlayers();
+    void showError(CommandSource sender, Throwable exception, String commandLabel);
+
+    IItemDb getItemDb();
+
+    UserMap getUserMap();
+
+    Metrics getMetrics();
+
+    void setMetrics(Metrics metrics);
+
+    EssentialsTimer getTimer();
+
+    @Deprecated
+    List<String> getVanishedPlayers();
+
+    Collection<Player> getOnlinePlayers();
+
+    Iterable<User> getOnlineUsers();
+
+    SpawnerProvider getSpawnerProvider();
 }

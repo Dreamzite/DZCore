@@ -3,210 +3,340 @@ package com.earth2me.essentials;
 import com.earth2me.essentials.commands.IEssentialsCommand;
 import com.earth2me.essentials.signs.EssentialsSign;
 import com.earth2me.essentials.textreader.IText;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventPriority;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
-public interface ISettings extends IConf
-{
-	boolean areSignsDisabled();
 
-	IText getAnnounceNewPlayerFormat();
+public interface ISettings extends IConf {
+    boolean areSignsDisabled();
 
-	boolean getAnnounceNewPlayers();
+    IText getAnnounceNewPlayerFormat();
 
-	String getNewPlayerKit();
+    boolean getAnnounceNewPlayers();
 
-	String getBackupCommand();
+    String getNewPlayerKit();
 
-	long getBackupInterval();
+    String getBackupCommand();
 
-	String getChatFormat(String group);
+    long getBackupInterval();
 
-	int getChatRadius();
+    String getChatFormat(String group);
 
-	BigDecimal getCommandCost(IEssentialsCommand cmd);
+    int getChatRadius();
 
-	BigDecimal getCommandCost(String label);
+    int getNearRadius();
 
-	String getCurrencySymbol();
+    char getChatShout();
 
-	int getOversizedStackSize();
+    char getChatQuestion();
 
-	int getDefaultStackSize();
+    BigDecimal getCommandCost(IEssentialsCommand cmd);
 
-	double getHealCooldown();
+    BigDecimal getCommandCost(String label);
 
-	Set<String> getSocialSpyCommands();
+    String getCurrencySymbol();
 
-	Map<String, Object> getKit(String name);
+    int getOversizedStackSize();
 
-	ConfigurationSection getKits();
+    int getDefaultStackSize();
 
-	String getLocale();
+    double getHealCooldown();
 
-	String getNewbieSpawn();
+    Set<String> getSocialSpyCommands();
 
-	String getNicknamePrefix();
+    boolean getSocialSpyListenMutedPlayers();
 
-	ChatColor getOperatorColor() throws Exception;
+    Set<String> getMuteCommands();
 
-	boolean getPerWarpPermission();
+    /**
+     * @Deprecated in favor of {@link Kits#getKits()}
+     */
+    @Deprecated
+    ConfigurationSection getKits();
 
-	boolean getProtectBoolean(final String configName, boolean def);
+    /**
+     * @Deprecated in favor of {@link Kits#getKit(String)}
+     */
+    @Deprecated
+    Map<String, Object> getKit(String kit);
 
-	int getProtectCreeperMaxHeight();
+    /**
+     * @Deprecated in favor of {@link Kits#addKit(String, List, long)}}
+     */
+    @Deprecated
+    void addKit(String name, List<String> lines, long delay);
 
-	List<Integer> getProtectList(final String configName);
+    @Deprecated
+    ConfigurationSection getKitSection();
 
-	boolean getProtectPreventSpawn(final String creatureName);
+    boolean isSkippingUsedOneTimeKitsFromKitList();
 
-	String getProtectString(final String configName);
+    String getLocale();
 
-	boolean getRespawnAtHome();
+    String getNewbieSpawn();
 
-	Set getMultipleHomes();
+    String getNicknamePrefix();
 
-	int getHomeLimit(String set);
+    ChatColor getOperatorColor() throws Exception;
 
-	int getHomeLimit(User user);
+    boolean getPerWarpPermission();
 
-	int getSpawnMobLimit();
+    boolean getProtectBoolean(final String configName, boolean def);
 
-	BigDecimal getStartingBalance();
+    int getProtectCreeperMaxHeight();
 
-	boolean isTeleportSafetyEnabled();
+    List<Material> getProtectList(final String configName);
 
-	double getTeleportCooldown();
+    boolean getProtectPreventSpawn(final String creatureName);
 
-	double getTeleportDelay();
+    String getProtectString(final String configName);
 
-	boolean hidePermissionlessHelp();
+    boolean getRespawnAtHome();
 
-	boolean isCommandDisabled(final IEssentialsCommand cmd);
+    Set getMultipleHomes();
 
-	boolean isCommandDisabled(String label);
+    int getHomeLimit(String set);
 
-	boolean isCommandOverridden(String name);
+    int getHomeLimit(User user);
 
-	boolean isDebug();
+    int getSpawnMobLimit();
 
-	boolean isEcoDisabled();
+    BigDecimal getStartingBalance();
 
-	boolean isTradeInStacks(int id);
+    boolean isTeleportSafetyEnabled();
 
-	List<Integer> itemSpawnBlacklist();
+    boolean isForceDisableTeleportSafety();
 
-	List<EssentialsSign> enabledSigns();
+    double getTeleportCooldown();
 
-	boolean permissionBasedItemSpawn();
+    double getTeleportDelay();
 
-	boolean showNonEssCommandsInHelp();
+    boolean hidePermissionlessHelp();
 
-	boolean warnOnBuildDisallow();
+    boolean isCommandDisabled(final IEssentialsCommand cmd);
 
-	boolean warnOnSmite();
+    boolean isCommandDisabled(String label);
 
-	BigDecimal getMaxMoney();
+    boolean isCommandOverridden(String name);
 
-	BigDecimal getMinMoney();
+    boolean isDebug();
 
-	boolean isEcoLogEnabled();
+    boolean isEcoDisabled();
 
-	boolean isEcoLogUpdateEnabled();
+    @Deprecated
+    boolean isTradeInStacks(int id);
 
-	boolean removeGodOnDisconnect();
+    boolean isTradeInStacks(Material type);
 
-	boolean changeDisplayName();
+    List<Material> itemSpawnBlacklist();
 
-	boolean changePlayerListName();
+    List<EssentialsSign> enabledSigns();
 
-	boolean isPlayerCommand(String string);
+    boolean permissionBasedItemSpawn();
 
-	boolean useBukkitPermissions();
+    boolean showNonEssCommandsInHelp();
 
-	boolean addPrefixSuffix();
+    boolean warnOnBuildDisallow();
 
-	boolean disablePrefix();
+    boolean warnOnSmite();
 
-	boolean disableSuffix();
+    BigDecimal getMaxMoney();
 
-	long getAutoAfk();
+    BigDecimal getMinMoney();
 
-	long getAutoAfkKick();
+    boolean isEcoLogEnabled();
 
-	boolean getFreezeAfkPlayers();
+    boolean isEcoLogUpdateEnabled();
 
-	boolean cancelAfkOnMove();
+    boolean removeGodOnDisconnect();
 
-	boolean cancelAfkOnInteract();
+    boolean changeDisplayName();
 
-	boolean areDeathMessagesEnabled();
+    boolean changePlayerListName();
 
-	void setDebug(boolean debug);
+    boolean isPlayerCommand(String string);
 
-	Set<String> getNoGodWorlds();
+    boolean useBukkitPermissions();
 
-	boolean getUpdateBedAtDaytime();
+    boolean addPrefixSuffix();
 
-	boolean allowUnsafeEnchantments();
+    boolean disablePrefix();
 
-	boolean getRepairEnchanted();
+    boolean disableSuffix();
 
-	boolean isWorldTeleportPermissions();
+    long getAutoAfk();
 
-	boolean isWorldHomePermissions();
+    long getAutoAfkKick();
 
-	boolean registerBackInListener();
+    boolean getFreezeAfkPlayers();
 
-	boolean getDisableItemPickupWhileAfk();
+    boolean cancelAfkOnMove();
 
-	EventPriority getRespawnPriority();
+    boolean cancelAfkOnInteract();
 
-	long getTpaAcceptCancellation();
+    boolean sleepIgnoresAfkPlayers();
 
-	boolean isMetricsEnabled();
+    boolean isAfkListName();
 
-	void setMetricsEnabled(boolean metricsEnabled);
+    String getAfkListName();
 
-	long getTeleportInvulnerability();
+    boolean areDeathMessagesEnabled();
 
-	boolean isTeleportInvulnerability();
+    void setDebug(boolean debug);
 
-	long getLoginAttackDelay();
+    Set<String> getNoGodWorlds();
 
-	int getSignUsePerSecond();
+    boolean getUpdateBedAtDaytime();
 
-	double getMaxFlySpeed();
+    boolean allowUnsafeEnchantments();
 
-	double getMaxWalkSpeed();
+    boolean getRepairEnchanted();
 
-	int getMailsPerMinute();
+    boolean isWorldTeleportPermissions();
 
-	long getEconomyLagWarning();
+    boolean isWorldHomePermissions();
 
-	void setEssentialsChatActive(boolean b);
+    boolean registerBackInListener();
 
-	long getMaxTempban();
+    boolean getDisableItemPickupWhileAfk();
 
-	Map<String, Object> getListGroupConfig();
+    EventPriority getRespawnPriority();
 
-	int getMaxNickLength();
+    EventPriority getSpawnJoinPriority();
 
-	int getMaxUserCacheCount();
+    long getTpaAcceptCancellation();
 
-	boolean allowSilentJoinQuit();
+    long getTeleportInvulnerability();
 
-	boolean isCustomJoinMessage();
+    boolean isTeleportInvulnerability();
 
-	String getCustomJoinMessage();
+    long getLoginAttackDelay();
 
-	boolean isCustomQuitMessage();
+    int getSignUsePerSecond();
 
-	String getCustomQuitMessage();
+    double getMaxFlySpeed();
+
+    double getMaxWalkSpeed();
+
+    int getMailsPerMinute();
+
+    long getEconomyLagWarning();
+
+    long getPermissionsLagWarning();
+
+    void setEssentialsChatActive(boolean b);
+
+    long getMaxTempban();
+
+    Map<String, Object> getListGroupConfig();
+
+    int getMaxNickLength();
+
+    boolean ignoreColorsInMaxLength();
+
+    boolean hideDisplayNameInVanish();
+
+    int getMaxUserCacheCount();
+
+    boolean allowSilentJoinQuit();
+
+    boolean isCustomJoinMessage();
+
+    String getCustomJoinMessage();
+
+    boolean isCustomQuitMessage();
+
+    String getCustomQuitMessage();
+
+    boolean isNotifyNoNewMail();
+
+    boolean isDropItemsIfFull();
+
+    boolean isLastMessageReplyRecipient();
+
+    BigDecimal getMinimumPayAmount();
+
+    long getLastMessageReplyRecipientTimeout();
+
+    boolean isMilkBucketEasterEggEnabled();
+
+    boolean isSendFlyEnableOnJoin();
+
+    boolean isWorldTimePermissions();
+
+    boolean isSpawnOnJoin();
+
+    List<String> getSpawnOnJoinGroups();
+
+    boolean isUserInSpawnOnJoinGroup(IUser user);
+
+    boolean isTeleportToCenterLocation();
+
+    boolean isCommandCooldownsEnabled();
+
+    long getCommandCooldownMs(String label);
+
+    Entry<Pattern, Long> getCommandCooldownEntry(String label);
+
+    boolean isCommandCooldownPersistent(String label);
+
+    boolean isNpcsInBalanceRanking();
+
+    NumberFormat getCurrencyFormat();
+
+    List<EssentialsSign> getUnprotectedSignNames();
+
+    boolean isPastebinCreateKit();
+
+    boolean isAllowBulkBuySell();
+
+    boolean isAddingPrefixInPlayerlist();
+
+    boolean isAddingSuffixInPlayerlist();
+
+    int getNotifyPlayerOfMailCooldown();
+
+    int getMotdDelay();
+
+    boolean isDirectHatAllowed();
+
+    List<String> getDefaultEnabledConfirmCommands();
+
+    boolean isConfirmCommandEnabledByDefault(String commandName);
+
+    boolean isTeleportBackWhenFreedFromJail();
+
+    boolean isCompassTowardsHomePerm();
+
+    boolean isAllowWorldInBroadcastworld();
+
+    String getItemDbType();
+
+    boolean isForceEnableRecipe();
+
+    boolean allowOldIdSigns();
+
+    boolean isWaterSafe();
+  
+    boolean isSafeUsermap();
+
+    boolean logCommandBlockCommands();
+
+    Set<Predicate<String>> getNickBlacklist();
+
+    double getMaxProjectileSpeed();
+
+    boolean isSpawnIfNoHome();
 }

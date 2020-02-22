@@ -1,137 +1,146 @@
 package com.earth2me.essentials.textreader;
 
-import static com.earth2me.essentials.I18n._;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.earth2me.essentials.I18n.tl;
 
-public class BookPager
-{
-	private final transient IText text;
 
-	public BookPager(final IText text)
-	{
-		this.text = text;
-	}
+public class BookPager {
+    private final transient IText text;
+    final double pageMax = 254;
+    final double charMax = 18.5;
+    final int lineMax = 12;
 
-	public List<String> getPages(final String pageStr) throws Exception
-	{
-		List<String> lines = text.getLines();
-		List<String> chapters = text.getChapters();
-		List<String> pageLines = new ArrayList<String>();
-		Map<String, Integer> bookmarks = text.getBookmarks();
+    public BookPager(final IText text) {
+        this.text = text;
+    }
 
-		//This checks to see if we have the chapter in the index
-		if (!bookmarks.containsKey(pageStr.toLowerCase(Locale.ENGLISH)))
-		{
-			throw new Exception(_("infoUnknownChapter"));
-		}
+    public List<String> getPages(final String pageStr) throws Exception {
+        List<String> lines = text.getLines();
+        List<String> chapters = text.getChapters();
+        List<String> pageLines = new ArrayList<String>();
+        Map<String, Integer> bookmarks = text.getBookmarks();
 
-		//Since we have a valid chapter, count the number of lines in the chapter
-		final int chapterstart = bookmarks.get(pageStr.toLowerCase(Locale.ENGLISH)) + 1;
-		int chapterend;
-		for (chapterend = chapterstart; chapterend < lines.size(); chapterend++)
-		{
-			final String line = lines.get(chapterend);
-			if (line.length() > 0 && line.charAt(0) == '#')
-			{
-				break;
-			}
-		}
+        //This checks to see if we have the chapter in the index
+        if (!bookmarks.containsKey(pageStr.toLowerCase(Locale.ENGLISH))) {
+            throw new Exception(tl("infoUnknownChapter"));
+        }
 
-		for (int lineNo = chapterstart; lineNo < chapterend; lineNo += 1)
-		{
-			String pageLine = "\u00a70" + lines.get(lineNo);
-			String tempLine;
-			final double max = 18;
-			final int lineLength = pageLine.length();
-			double length = 0;
-			int pointer = 0;
-			int start = 0;
-			double weight = 1;
+        //Since we have a valid chapter, count the number of lines in the chapter
+        final int chapterstart = bookmarks.get(pageStr.toLowerCase(Locale.ENGLISH)) + 1;
+        int chapterend;
+        for (chapterend = chapterstart; chapterend < lines.size(); chapterend++) {
+            final String line = lines.get(chapterend);
+            if (line.length() > 0 && line.charAt(0) == '#') {
+                break;
+            }
+        }
 
-			while (pointer < lineLength)
-			{
-				Character letter = pageLine.charAt(pointer);
+        List<String> pages = new ArrayList<String>();
+        double pageLength = 0;
 
-				if (pageLine.charAt(start) == ' ')
-				{
-					start++;
-					pointer++;
-					continue;
-				}
+        for (int lineNo = chapterstart; lineNo < chapterend; lineNo += 1) {
+            String pageLine = lines.get(lineNo);
+            String tempLine;
 
-				if (length >= max || (letter == '\u00a7' && length + 1 >= max))
-				{
-					int pos = pointer;
-					while (pos > start && pageLine.charAt(pos) != ' ' && pageLine.charAt(pos) != "\n".charAt(0))
-					{
-						pos--;
-					}
-					if (pos != start)
-					{
-						pointer = pos;
-					}
+            final int lineLength = pageLine.length();
+            double length = 0;
+            int pointer = 0;
+            int start = 0;
+            double weight = 1;
+            boolean forcePageEnd = false;
 
-					tempLine = pageLine.substring(start, pointer);
-					pageLines.add(tempLine);
-					start = pointer;
-					length = 0;
-				}
+            while (pointer < lineLength) {
+                Character letter = pageLine.charAt(pointer);
 
-				if (letter == '\u00a7' && pointer + 1 < lineLength)
-				{
-					Character nextLetter = pageLine.charAt(pointer + 1);
-					if (nextLetter == 'l' || nextLetter == 'L')
-					{
-						weight = 1.25;
-					}
-					else
-					{
-						weight = 1;
-					}
-					pointer++;
-				}
-				else if (letter == 'i' || letter == '.' || letter == ',')
-				{
-					length += (0.4 * weight);
-				}
-				else if (letter == 'l')
-				{
-					length += (0.6 * weight);
-				}
-				else if (letter == ' ' || letter == 't')
-				{
-					length += (0.7 * weight);
-				}
-				else
-				{
-					length += weight;
-				}
-				pointer++;
-			}
+                if (pageLine.charAt(start) == ' ') {
+                    start++;
+                    pointer++;
+                    continue;
+                }
 
-			if (length > 0)
-			{
-				tempLine = pageLine.substring(start, lineLength);
-				pageLines.add(tempLine);
-			}
-		}
+                if (pageLength >= pageMax) {
+                    length = charMax;
+                    pageLength = 0;
+                    forcePageEnd = true;
+                }
 
-		List<String> pages = new ArrayList<String>();
-		for (int count = 0; count < pageLines.size(); count += 12)
-		{
-			StringBuilder newPage = new StringBuilder();
-			for (int i = count; i < count + 12 && i < pageLines.size(); i++)
-			{
-				newPage.append(pageLines.get(i)).append("\n");
-			}
+                if (length >= charMax || (letter == '\u00a7' && length + 1 >= charMax)) {
+                    int pos = pointer;
+                    int rollback = 0;
+                    while (pos > start && pageLine.charAt(pos) != ' ' && pageLine.charAt(pos) != "\n".charAt(0)) {
+                        rollback++;
+                        pos--;
+                    }
+                    if (pos != start) {
+                        pointer = pos;
+                        pageLength -= rollback;
+                    }
 
-			pages.add(newPage.toString());
-		}
+                    tempLine = pageLine.substring(start, pointer);
+                    pageLines.add(tempLine);
+                    if (buildPage(pages, pageLines, forcePageEnd)) {
+                        pageLength = 0;
+                    }
+                    forcePageEnd = false;
 
-		return pages;
-	}
+                    start = pointer;
+                    length = 0;
+                    pageLength += 1;
+                }
+
+                pageLength++;
+
+                if (letter == '\u00a7' && pointer + 1 < lineLength) {
+                    Character nextLetter = pageLine.charAt(pointer + 1);
+                    if (nextLetter == 'l' || nextLetter == 'L') {
+                        weight = 1.25;
+                    } else {
+                        weight = 1;
+                    }
+                    pointer++;
+                } else if (letter == 'i' || letter == '.' || letter == ',' || letter == '!' || letter == ':' || letter == ';' || letter == '|') {
+                    length += (0.34 * weight);
+                } else if (letter == 'l' || letter == '\'' || letter == '`') {
+                    length += (0.53 * weight);
+                } else if (letter == ' ' || letter == 't' || letter == 'I' || letter == '[' || letter == ']') {
+                    length += (0.69 * weight);
+                } else if (letter == 'f' || letter == 'k' || letter == '"' || letter == '*' || letter == '(' || letter == ')' || letter == '{' || letter == '}' || letter == '<' || letter == '>') {
+                    length += (0.85 * weight);
+                } else if (letter == '@' || letter == '~') {
+                    length += (1.2 * weight);
+                } else {
+                    length += weight;
+                }
+                pointer++;
+            }
+
+            if (length > 0) {
+                tempLine = pageLine.substring(start, lineLength);
+                pageLines.add(tempLine);
+                if (buildPage(pages, pageLines, false)) {
+                    pageLength = 0;
+                }
+            }
+        }
+
+        buildPage(pages, pageLines, true);
+        return pages;
+    }
+
+    boolean buildPage(List<String> pages, List<String> lines, boolean override) {
+        if (override || lines.size() > lineMax) {
+            StringBuilder newPage = new StringBuilder();
+            for (String aline : lines) {
+                newPage.append(aline).append("\n");
+            }
+            pages.add(newPage.toString());
+            lines.clear();
+            return true;
+        }
+        return false;
+    }
 }
